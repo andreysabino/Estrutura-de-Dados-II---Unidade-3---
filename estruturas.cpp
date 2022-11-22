@@ -107,13 +107,6 @@ struct vizinhanca{
     int qntvizinhos;
 };
 
-float convert_la_lo(float la_lo){
-    float result;
-    la_lo = la_lo/60;
-    result = la_lo*1852;
-    return result;    
-}
-
 float dist(dataItem A, dataItem B){
     float d = 0;
     d = sqrt(pow((A.GPS.la - B.GPS.la),2)+pow((A.GPS.lo - B.GPS.lo),2));
