@@ -1,188 +1,315 @@
-#ifndef ESTRUTURAS_CPP
-#define ESTRUTURAS_CPP
-#define SIZE 159
-#define MAX 5570
 #include <stdio.h>
 #include <stdlib.h>
-#include <string.h>
-#include <math.h>
+#include <time.h>
+#include <fstream>
+#include <iostream>
+#include <stdbool.h>
 
-typedef float latitude;
-typedef float longitude;
-
-struct cidade {
-    unsigned int id;
-    char *estado;
-    char *cidade;
-    int vizinhos;
-};
-
-struct gps {
-    unsigned int id;
-    latitude la;
-    longitude lo;
-};
-
-struct dataItem {
-    int key;
-    cidade city;
-    gps GPS;
-    float km;
-    int vizinhos;
-};
-
-cidade *getCidades(char *arquivo) {
-    FILE *f = fopen(arquivo, "r");
-    cidade *cidades = (cidade *)malloc(MAX * sizeof(cidade));
-    if (!f) {
-        perror("Arquivo não existe");
+// Função para gerar números aleatórios
+int* numerosAleatorios(int N, int d) {
+    int* x = (int*)malloc(sizeof(int) * N);
+    if (x == NULL) {
+        printf("Erro ao alocar memória!\n");
         return NULL;
     }
-    fscanf(f, "CODIGO MUNICIPIO;UF;NOME MUNICIPIO");
-    unsigned int cod;
-    char *uf;
-    char *cid;
-    int i = 0;
-    int j = 0;
-    while (!feof(f)) {
-        uf = (char *)malloc(2 * sizeof(char));
-        cid = (char *)malloc(40 * sizeof(char));
-        fscanf(f, "%d %s ", &cod, uf);
-        fgets(cid, 40 * sizeof(char), f);
-       // printf("%d %s %s", cod, uf, cid);
-    
-        cidades[j].id = cod;
-        cidades[j].estado = uf;
-        cidades[j].cidade = cid;
-        j = j + 1;
-       
-        i = i + 1;
+    for (int i = 0; i < N; i++) {
+        x[i] = rand() % (d * N) + 1;
     }
-    return cidades;
+    return x;
 }
 
-gps *getGps(char *localizacoes) {
-    FILE *f = fopen(localizacoes, "r");
-    gps *local = (gps *)malloc(MAX * sizeof(gps));
-    if (!f) {
-        perror("Arquivo não existe");
+// Função para ler dados do arquivo
+int* lerDados(int t) {
+    FILE *f = fopen("numerosAleatorios.txt", "r");
+    if (f == NULL) {
+        printf("Erro ao abrir o arquivo!\n");
         return NULL;
     }
-    fscanf(f, "CODIGO MUNICIPIO;LATITUDE;LONGITUDE");
-    unsigned int cod;
-    latitude la;
-    longitude lo;
-    int i = 0, j = 0;
-    while (!feof(f)) {
-        
-        fscanf(f, "%u;%f;%f", &cod, &la, &lo);
-            local[i].id = cod;
-            local[i].la = la;
-            local[i].lo = -1*lo;
-            i = i + 1; 
-        
+    int* res = (int*)malloc(t * sizeof(int));
+    if (res == NULL) {
+        printf("Erro ao alocar memória!\n");
+        fclose(f);
+        return NULL;
     }
-    return local;
+    for (int i = 0; i < t; i++) {
+        fscanf(f, "%d", &res[i]);
+    }
+    fclose(f);
+    return res;
 }
 
-dataItem *getItens(cidade *cities, gps *local) {
-    dataItem *dados = (dataItem *)malloc(MAX * sizeof(dataItem));
-    int k = 0;
-    for (size_t i = 0; i < MAX; i++) {
-        dados[k].key = cities[i].id;
-        for (size_t j = 0; j < MAX; j++) {
-            if (cities[i].id == local[j].id) {
-                dados[k].city = cities[i];
-                dados[k].GPS = local[j];
-                k++;
+// Função para gerar números aleatórios e salvar em um arquivo
+void gerarNumerosAleatorios(int t) {
+    FILE *f = fopen("numerosAleatorios.txt", "w");
+    if (f == NULL) {
+        printf("Erro ao abrir o arquivo!\n");
+        return;
+    }
+    int dispersao = 100;
+    srand(100); // Semente fixa para reproducibilidade
+    int* res = numerosAleatorios(t, dispersao);
+    if (res == NULL) {
+        fclose(f);
+        return;
+    }
+    for (int i = 0; i < t; i++) {
+        fprintf(f, "%d\n", res[i]);
+    }
+    fclose(f);
+    free(res); // Libera a memória alocada
+}
+
+// Função para mostrar valores (apenas para debug)
+void mostrarValores(int *x, int t) {
+    for (int i = 0; i < t; i++) {
+        printf("x[%d] = %d\n", i, x[i]);
+    }
+}
+
+// Função de ordenação SelectionSort
+void SelectionSort(int *x, int n) {
+    for (int i = 0; i < n; i++) {
+        int menor = i;
+        for (int j = i + 1; j < n; j++) {
+            if (x[j] < x[menor]) {
+                menor = j;
+            }
+        }
+        int temp = x[i];
+        x[i] = x[menor];
+        x[menor] = temp;
+    }
+}
+
+// Função de ordenação BubbleSort
+void bubbleSort(int *x, int n) {
+    for (int i = 0; i < n - 1; i++) {
+        for (int j = 0; j < n - i - 1; j++) {
+            if (x[j] > x[j + 1]) {
+                int temp = x[j];
+                x[j] = x[j + 1];
+                x[j + 1] = temp;
             }
         }
     }
-    return dados;
 }
 
-struct vizinhanca{
-    int pos;
-    int posvoid;
-    int qntvizinhos;
-};
-
-float dist(dataItem A, dataItem B){
-    float d = 0;
-    d = sqrt(pow((A.GPS.la - B.GPS.la),2)+pow((A.GPS.lo - B.GPS.lo),2));
- 
-    return d;
-
+// Função de ordenação QuickSort
+void quicksort(int *x, int ini, int fim) {
+    if (ini >= fim) return;
+    int pivo = x[(ini + fim) / 2];
+    int i = ini, j = fim;
+    while (i <= j) {
+        while (x[i] < pivo) i++;
+        while (x[j] > pivo) j--;
+        if (i <= j) {
+            int temp = x[i];
+            x[i] = x[j];
+            x[j] = temp;
+            i++;
+            j--;
+        }
+    }
+    quicksort(x, ini, j);
+    quicksort(x, i, fim);
 }
 
-dataItem *criando_grafo(char *arquivo1, char *arquivo2){
-    dataItem *d = (dataItem*)malloc(sizeof(dataItem));
+// Função de ordenação MergeSort
+void merge(int *x, int inf, int sup, int mid) {
+    int i = inf, j = mid + 1, k = 0;
+    int *temp = (int*)malloc((sup - inf + 1) * sizeof(int));
+    if (temp == NULL) {
+        printf("Erro ao alocar memória!\n");
+        return;
+    }
+    while (i <= mid && j <= sup) {
+        if (x[i] < x[j]) {
+            temp[k++] = x[i++];
+        } else {
+            temp[k++] = x[j++];
+        }
+    }
+    while (i <= mid) temp[k++] = x[i++];
+    while (j <= sup) temp[k++] = x[j++];
+    for (i = inf, k = 0; i <= sup; i++, k++) {
+        x[i] = temp[k];
+    }
+    free(temp);
+}
 
+void mergeSort(int *x, int inf, int sup) {
+    if (inf < sup) {
+        int mid = (inf + sup) / 2;
+        mergeSort(x, inf, mid);
+        mergeSort(x, mid + 1, sup);
+        merge(x, inf, sup, mid);
+    }
+}
+
+// Função de ordenação BucketSort
+void BucketSort(int *x, int n) {
+    int max_val = x[0];
+    for (int i = 1; i < n; i++) {
+        if (x[i] > max_val) {
+            max_val = x[i];
+        }
+    }
+    int* count = (int*)calloc(max_val + 1, sizeof(int));
+    if (count == NULL) {
+        printf("Erro ao alocar memória!\n");
+        return;
+    }
+    for (int i = 0; i < n; i++) {
+        count[x[i]]++;
+    }
+    int index = 0;
+    for (int i = 0; i <= max_val; i++) {
+        while (count[i] > 0) {
+            x[index++] = i;
+            count[i]--;
+        }
+    }
+    free(count);
+}
+
+// Função de ordenação GnomeSort
+void GnomeSort(int *x, int size) {
     int i = 0;
-    cidade *cidades = getCidades(arquivo1);
-    gps *local = getGps(arquivo2);
-    d = getItens(cidades,local);
-    int k = 0;
-    dataItem *cidadesRN = (dataItem*)malloc(167*sizeof(dataItem));
-    
-    for(int i = 0; i < 5570; i++){
-        if(strcmp(d[i].city.estado,"RN") == 0){
-            cidadesRN[k] = d[i];
-            k++;
+    while (i < size) {
+        if (i == 0 || x[i - 1] <= x[i]) {
+            i++;
+        } else {
+            int temp = x[i];
+            x[i] = x[i - 1];
+            x[i - 1] = temp;
+            i--;
         }
     }
-
-    return cidadesRN;
 }
 
-vizinhanca matriz_grafo(dataItem *G, float D){
-    int j, i;
-float g[167][167], V;
-    for(i = 0; i < 167; i++){
-       j = 0; 
-        while(j < 167){
-
-           V = dist(G[i],G[j]); 
-
-                if(V < D){
-                            
-                g[i][j] = V;
-                g[j][i] = V;
-
-                } else {
-                    g[i][j] = 0;
-                    g[i][j] = 0;
-                }
-                            
-            j++;
-        }    
-    }
-
-    int aux = 0;
-    vizinhanca vizinhos;
-    vizinhos.qntvizinhos = 0;
-    vizinhos.pos = 0; 
-    vizinhos.posvoid = -1;
-
-    for(i = 0; i < 167; i++){
-        j = 0;
-        while(j < 167){
-            if (g[i][j] > 0){
-                aux++;
+// Função de ordenação ShellSort
+void ShellSort(int *x, int n) {
+    for (int interval = n / 2; interval > 0; interval /= 2) {
+        for (int i = interval; i < n; i++) {
+            int temp = x[i];
+            int j;
+            for (j = i; j >= interval && x[j - interval] > temp; j -= interval) {
+                x[j] = x[j - interval];
             }
-            j++;
-        }
-
-        if (aux > vizinhos.qntvizinhos){
-            vizinhos.qntvizinhos = aux;
-            vizinhos.pos = i;          
-            aux = 0;
-        } else if(aux == 0){
-            vizinhos.posvoid = i;
+            x[j] = temp;
         }
     }
-
-    return vizinhos;
 }
 
-#endif
+// Função para calcular o tempo em segundos
+float tempo(clock_t tempo) {
+    return ((float)tempo) / CLOCKS_PER_SEC;
+}
+
+// Função principal
+int main(void) {
+    int vSize = 100;
+    int vIncrement = 10;
+    int tentativa = 5;
+    FILE *result = fopen("tempos.txt", "w");
+    if (result == NULL) {
+        printf("Erro ao abrir o arquivo tempos.txt!\n");
+        return 1;
+    }
+
+    int *v = (int*)malloc(vSize * sizeof(int));
+    if (v == NULL) {
+        printf("Erro ao alocar memória!\n");
+        fclose(result);
+        return 1;
+    }
+
+    for (int i = 0; i < vSize; i++) {
+        v[i] = vIncrement * (i + 1);
+    }
+
+    for (int j = 0; j < vSize; j++) {
+        gerarNumerosAleatorios(v[j]);
+        int *x = (int*)malloc(v[j] * sizeof(int));
+        if (x == NULL) {
+            printf("Erro ao alocar memória!\n");
+            free(v);
+            fclose(result);
+            return 1;
+        }
+
+        clock_t dB[tentativa], dQ[tentativa], dM[tentativa], dBucket[tentativa], dSele[tentativa], dGnome[tentativa], dShell[tentativa];
+
+        for (int i = 0; i < tentativa; i++) {
+            // BubbleSort
+            x = lerDados(v[j]);
+            dB[i] = clock();
+            bubbleSort(x, v[j]);
+            dB[i] = clock() - dB[i];
+
+            // QuickSort
+            x = lerDados(v[j]);
+            dQ[i] = clock();
+            quicksort(x, 0, v[j] - 1);
+            dQ[i] = clock() - dQ[i];
+
+            // MergeSort
+            x = lerDados(v[j]);
+            dM[i] = clock();
+            mergeSort(x, 0, v[j] - 1);
+            dM[i] = clock() - dM[i];
+
+            // BucketSort
+            x = lerDados(v[j]);
+            dBucket[i] = clock();
+            BucketSort(x, v[j]);
+            dBucket[i] = clock() - dBucket[i];
+
+            // SelectionSort
+            x = lerDados(v[j]);
+            dSele[i] = clock();
+            SelectionSort(x, v[j]);
+            dSele[i] = clock() - dSele[i];
+
+            // GnomeSort
+            x = lerDados(v[j]);
+            dGnome[i] = clock();
+            GnomeSort(x, v[j]);
+            dGnome[i] = clock() - dGnome[i];
+
+            // ShellSort
+            x = lerDados(v[j]);
+            dShell[i] = clock();
+            ShellSort(x, v[j]);
+            dShell[i] = clock() - dShell[i];
+        }
+
+        // Calcula a média dos tempos
+        clock_t sB = 0, sQ = 0, sM = 0, sBucket = 0, sSele = 0, sGnome = 0, sShell = 0;
+        for (int i = 0; i < tentativa; i++) {
+            sB += dB[i];
+            sQ += dQ[i];
+            sM += dM[i];
+            sBucket += dBucket[i];
+            sSele += dSele[i];
+            sGnome += dGnome[i];
+            sShell += dShell[i];
+        }
+        sB /= tentativa;
+        sQ /= tentativa;
+        sM /= tentativa;
+        sBucket /= tentativa;
+        sSele /= tentativa;
+        sGnome /= tentativa;
+        sShell /= tentativa;
+
+        // Salva os tempos no arquivo
+        fprintf(result, "%i\t%f\t%f\t%f\t%f\t%f\t%f\t%f\n", v[j], tempo(sB), tempo(sQ), tempo(sM), tempo(sBucket), tempo(sSele), tempo(sGnome), tempo(sShell));
+
+        free(x); // Libera a memória alocada para x
+    }
+
+    free(v); // Libera a memória alocada para v
+    fclose(result); // Fecha o arquivo de resultados
+    return 0;
+}
